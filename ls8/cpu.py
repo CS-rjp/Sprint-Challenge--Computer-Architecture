@@ -120,7 +120,7 @@ class CPU:
         """
         return self.ram[address]
 
-    def ram_write(self, address):
+    def ram_write(self, address, data):
         """
         Set the value of a register to an integer.
         """
