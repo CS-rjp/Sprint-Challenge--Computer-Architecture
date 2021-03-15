@@ -116,13 +116,13 @@ class CPU:
     def ram_read(self, address):
         """
         Loads registerA with the value at the memory address 
-        stored in registerB. This opcode reads from memory. (LD 10000011)
+        stored in registerB. This opcode reads from memory.
         """
         return self.ram[address]
 
     def ram_write(self, address):
         """
-        Set the value of a register to an integer. (LDI 10000010)
+        Set the value of a register to an integer.
         """
         self.ram[address] = data
 
