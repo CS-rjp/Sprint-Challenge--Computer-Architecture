@@ -8,38 +8,39 @@ class CPU:
     """
     Main CPU class.
     """
-    def __init__(self, op, reg_a, reg_b, pc):
+    def __init__(self):
         """
         Construct a new CPU.
         """
         # Opcodes
-        self.op = op
+        self.op = 0
         # RAM memory
-        self.ram = ram = [0]*255
+        self.ram = [0]*255
         # Registers
-        self.reg_a = reg_a = [0]*8
-        self.reg_b = reg_b = [0]*8
+        self.reg = [0]*8
+        #self.reg_a = reg_a = [0]*8
+        #self.reg_b = reg_b = [0]*8
         # Program Counter
-        self.pc = pc = 0
+        self.pc = 0
         # Instruction Register
-        self.ir = ir = 0
+        self.ir = 0
         # Memory Address Register
-        self.mar = mar = 0
+        self.mar = 0
         # Memory Data Register
-        self.mdr = mdr = 0
+        self.mdr = 0
         # Flag Register
-        self.fl = fl = 0
+        self.fl = 0
         # Set Running Loop
-        self.running = running = True
+        self.running = True
      
 
-    def load(self):
+    def load(self, program):
         """
         Load a program into memory.
         """
         address = 0
 
-        # hardcoded opcodes
+        # # hardcoded opcodes
         program = [
             # From print8.ls8
             0b10000010, # LDI R0,8
@@ -50,7 +51,7 @@ class CPU:
             0b00000001, # HLT
         ]
 
-        # create an 
+        # create a memory address 
         for instruction in program:
             # find address of the currently executing instruction
             self.ram[address] = instruction
@@ -96,21 +97,32 @@ class CPU:
         while self.running:
             execute_cmd = self.ram_read(self.pc)
 
-            if execute_cmd == 0b10000010: #LDI
-                oper1 = self.ram_read(self.pc+1)
-                oper2 = self.ram_read(self.pc+2)
+            self.pc +=1 
+            instruction = execute_cmd & 0b00111111  # select opcode and mask
+            opcode_size = execute_cmd >> 6        # shift to right 
+            op_position = self.pc
+            operands = (self.ram_read(op_position + i) for i in range(operand_count))
+            self.pc += operand_count
+
+            if execute_cmd == LDI: # 0b10000010
+                oper1 = next(operands) # self.ram_read(self.pc+1)
+                oper2 = next(operands) # self.ram_read(self.pc+2)
 
                 self.reg[oper1] = oper2
-                self.pc +=3
+                # self.pc +=3
 
-            elif execute_cmd == 0b01000111: #PRN
-                oper1 = self.ram_read(self.pc +1)
+            elif execute_cmd == PRN: #0b01000111
+                oper1 = self.reg[next(operands)] # self.ram_read(self.pc +1)
                 print(self.reg[oper1])
-                self.pc += 2
+                # self.pc += 2
 
-            elif execute_cmd == 0b00000001: #HLT
+            elif execute_cmd == HLT: #0b00000001
                 self.running = False
-                self.pc +=1
+                # self.pc +=1
+
+            else:
+                self.trace()
+                raise Exception(f'Unrecognized Instruction')
                 
 
     def ram_read(self, address):
