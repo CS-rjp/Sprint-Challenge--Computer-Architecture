@@ -3,24 +3,16 @@
 """Main."""
 
 import sys
-from cpu import *
+from cpu import CPU
 
-if len(sys.argv) > 1:
-    with open(sys.argv[1]) as file:
-        program = []
-        for line in file.readlines():
-            # str = line.strip().partition("#")[0]
-            str = line.split("#")[0].strip()
-            if len(str) == 0:
-                continue
-            program.append(int(str,2))
-
-        else:
-            print(f'Required Arguement: Program Filename')
-
+if len(sys.argv) !=2:
+    print(f"{sys.argv[0]} <file name>")
+    sys.exit(1)
 
 cpu = CPU()
 
-cpu.load(program)
+cpu.load(sys.argv[1])
 cpu.run()
 
+if __name__ == "__main__":
+    pass

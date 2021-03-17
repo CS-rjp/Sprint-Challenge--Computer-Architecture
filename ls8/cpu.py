@@ -18,8 +18,7 @@ class CPU:
         self.ram = [0]*255
         # Registers
         self.reg = [0]*8
-        #self.reg_a = reg_a = [0]*8
-        #self.reg_b = reg_b = [0]*8
+        self.reg[7] = 0xF4
         # Program Counter
         self.pc = 0
         # Instruction Register
@@ -32,42 +31,59 @@ class CPU:
         self.fl = 0
         # Set Running Loop
         self.running = True
+        # Stack Pointer
+        self.sp = 7
+
+        # in CPU opcodes
+        self.LDI = 0b10000010       # LDI regA, index
+        self.PRN = 0b01000111       # PRN regA
+        self.PRA = 0b01001000       # PRA regA
+        self.HLT = 0b00000001       # HLT
+        self.ADD = 0b10100000       # ADD regA, regB
+        self.MUL = 0b10100010       # MUL regA, regB     
+        self.PUSH = 0b01000101      # PUSH regA
+        self.POP = 0b01000110       # POP regA
+        self.SHL = 0b10101100       # SHL regA, regB
      
 
-    def load(self, program):
+    def load(self, file_name):
         """
         Load a program into memory.
         """
         address = 0
-
-        # # hardcoded opcodes
-        program = [
-            # From print8.ls8
-            0b10000010, # LDI R0,8
-            0b00000000, # NOP
-            0b00001000,
-            0b01000111, # PRN R0
-            0b00000000, # NOP
-            0b00000001, # HLT
-        ]
-
-        # create a memory address 
-        for instruction in program:
-            # find address of the currently executing instruction
-            self.ram[address] = instruction
-            # increment the program counter
-            address += 1
+                
+        # with open(file_name[1]) as file:
+        with open(file_name) as file:
+            
+            for line in file.readlines():
+                #str = line.strip().partition("#")[0]
+                str = line.split("#")[0].strip()
+                if len(str) == 0:
+                    continue
+                
+                self.ram_write(address, int(str, 2))
+                
+                address +=1
 
 
-    def alu(self, op, reg_a, reg_b):
+    def alu(self, op, oper1, oper2):
         """
         ALU operations.
         """
         if op == "ADD":
-            self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+            self.reg[oper1] += self.reg[oper2]
+
+        elif op == "MUL":
+            self.reg[oper1] *= self.reg[oper2]
+
+        # elif op == "SUB": 
+        #     self.reg[oper1] -= self.reg[oper2]
+
+        # elif op == "DIV":
+        #     self.reg[oper1] //= self.reg[oper2]
+
         else:
-            raise Exception("Unsupported ALU operation")
+            raise Exception("Unsupported ALU Operation")
 
     def trace(self):
         """
@@ -96,33 +112,51 @@ class CPU:
         """
         while self.running:
             execute_cmd = self.ram_read(self.pc)
-
-            self.pc +=1 
+            
             instruction = execute_cmd & 0b00111111  # select opcode and mask
-            opcode_size = execute_cmd >> 6        # shift to right 
+            operand_count = execute_cmd >> 6 
+            opcode_size = (execute_cmd >> 6) +1       # shift to right 
             op_position = self.pc
             operands = (self.ram_read(op_position + i) for i in range(operand_count))
-            self.pc += operand_count
+                        
+            oper1 = self.ram_read(self.pc+1) #next(operands) 
+            oper2 = self.ram_read(self.pc+2) #next(oper1) 
 
-            if execute_cmd == LDI: # 0b10000010
-                oper1 = next(operands) # self.ram_read(self.pc+1)
-                oper2 = next(operands) # self.ram_read(self.pc+2)
-
+            if execute_cmd == self.LDI: # 0b10000010            
                 self.reg[oper1] = oper2
-                # self.pc +=3
 
-            elif execute_cmd == PRN: #0b01000111
-                oper1 = self.reg[next(operands)] # self.ram_read(self.pc +1)
+            elif execute_cmd == self.PRN: #0b01000111
                 print(self.reg[oper1])
-                # self.pc += 2
 
-            elif execute_cmd == HLT: #0b00000001
+            elif execute_cmd == self.HLT: #0b00000001
                 self.running = False
-                # self.pc +=1
+
+            elif execute_cmd == self.ADD:            
+                self.alu("ADD", oper1, oper2)
+
+            elif execute_cmd == self.MUL:
+                self.alu("MUL", oper1, oper2)
+
+            elif execute_cmd == self.PUSH:
+                # decrement
+                self.reg[self.sp] -=1
+                # add to stack at memory address assigned by 
+                # decremented stack pointer
+                self.ram[self.reg[self.sp]] = self.reg[oper1]
+
+            elif execute_cmd == self.POP:
+                # copy value at memory address assigned by 
+                # stack pointer 
+                self.reg[oper1] = self.ram[self.reg[self.sp]]
+                # increment
+                self.reg[self.sp] +=1
 
             else:
                 self.trace()
                 raise Exception(f'Unrecognized Instruction')
+
+            # increment program counter as determined by opcode size
+            self.pc += opcode_size
                 
 
     def ram_read(self, address):
@@ -132,11 +166,14 @@ class CPU:
         """
         return self.ram[address]
 
+
     def ram_write(self, address, data):
         """
         Set the value of a register to an integer.
         """
         self.ram[address] = data
 
+
     def halt(self):
-        running = False
+        self.running = False
+        sys.exit(0)
