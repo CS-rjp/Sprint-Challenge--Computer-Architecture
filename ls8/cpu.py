@@ -117,9 +117,9 @@ class CPU:
             
             instruction = execute_cmd & 0b00111111  # select opcode and mask
             operand_count = execute_cmd >> 6 
-            opcode_size = (execute_cmd >> 6) +1       # shift to right 
+            opcode_size = (operand_count) +1        # shift to right 
             op_position = self.pc
-            operands = (self.ram_read(op_position + i) for i in range(operand_count))
+            # operands = (self.ram_read(op_position + i) for i in range(operand_count))
                         
             oper1 = self.ram_read(self.pc+1) #next(operands) 
             oper2 = self.ram_read(self.pc+2) #next(oper1) 
@@ -181,7 +181,7 @@ class CPU:
             # increment program counter as determined by opcode size
             # Note: subroutines should not be includes in program counter
             # may need to use a flag and mask to implement
-            if execute_cmd != self.CALL or self.RET:
+            if execute_cmd != self.CALL and execute_cmd != self.RET:
                 self.pc += opcode_size
                 
 
