@@ -44,6 +44,8 @@ class CPU:
         self.PUSH = 0b01000101      # PUSH regA
         self.POP = 0b01000110       # POP regA
         self.SHL = 0b10101100       # SHL regA, regB
+        self.CALL = 0b01010000      # CALL regA
+        self.RET = 0b00010001       # RET
      
 
     def load(self, file_name):
@@ -151,12 +153,36 @@ class CPU:
                 # increment
                 self.reg[self.sp] +=1
 
+            elif execute_cmd == self.CALL:
+                # get the address of the next instruction by adding 2 to 
+                # the current instruction
+                addr_next_inst = self.pc +2
+                # decrement
+                self.reg[self.sp] -=1
+                # push the address of next instruction onto stack
+                # for use in the Return instruction
+                self.ram[self.reg[self.sp]] = addr_next_inst
+
+                reg_index = oper1
+                addr = self.reg[reg_index]
+                self.pc = addr
+
+            elif execute_cmd == self.RET:
+                # copy value at memory address assigned by 
+                # stack pointer into the pc 
+                self.pc = self.ram[self.reg[self.sp]]
+                # increment
+                self.reg[self.sp] +=1
+
             else:
                 self.trace()
                 raise Exception(f'Unrecognized Instruction')
 
             # increment program counter as determined by opcode size
-            self.pc += opcode_size
+            # Note: subroutines should not be includes in program counter
+            # may need to use a flag and mask to implement
+            if execute_cmd != self.CALL or self.RET:
+                self.pc += opcode_size
                 
 
     def ram_read(self, address):
