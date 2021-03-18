@@ -181,7 +181,8 @@ class CPU:
             # increment program counter as determined by opcode size
             # Note: subroutines should not be includes in program counter
             # may need to use a flag and mask to implement
-            if execute_cmd != self.CALL and execute_cmd != self.RET:
+            #if execute_cmd != self.CALL and execute_cmd != self.RET:
+            if execute_cmd & 0b00010000 == 0:
                 self.pc += opcode_size
                 
 
