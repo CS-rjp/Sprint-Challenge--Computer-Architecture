@@ -108,6 +108,18 @@ class CPU:
         # Return from an interrupt handler.
         self.IRET = 0b00010011      # IRET 
 
+        self.LDI = 0b10000010       # LDI regA, index
+        self.PRN = 0b01000111       # PRN regA
+        self.PRA = 0b01001000       # PRA regA
+        self.HLT = 0b00000001       # HLT
+        self.ADD = 0b10100000       # ADD regA, regB
+        self.MUL = 0b10100010       # MUL regA, regB     
+        self.PUSH = 0b01000101      # PUSH regA
+        self.POP = 0b01000110       # POP regA
+        self.SHL = 0b10101100       # SHL regA, regB
+        self.CALL = 0b01010000      # CALL regA
+        self.RET = 0b00010001       # RET
+     
 
     def load(self, file_name):
         """
@@ -171,6 +183,23 @@ class CPU:
                 self.fl = 0b00000010
             else:
                 self.fl = 0b00000001
+
+
+    def alu(self, op, oper1, oper2):
+        """
+        ALU operations.
+        """
+        if op == "ADD":
+            self.reg[oper1] += self.reg[oper2]
+
+        elif op == "MUL":
+            self.reg[oper1] *= self.reg[oper2]
+
+        # elif op == "SUB": 
+        #     self.reg[oper1] -= self.reg[oper2]
+
+        # elif op == "DIV":
+        #     self.reg[oper1] //= self.reg[oper2]
 
         else:
             raise Exception("Unsupported ALU Operation")
@@ -241,6 +270,9 @@ class CPU:
 
             elif execute_cmd == self.MOD:            
                 self.alu("MOD", oper1, oper2)
+
+            elif execute_cmd == self.MUL:
+                self.alu("MUL", oper1, oper2)
 
             elif execute_cmd == self.PUSH:
                 # decrement
@@ -315,6 +347,9 @@ class CPU:
                 raise Exception(f'Unrecognized Instruction')
 
             # increment program counter as determined by opcode size
+            # Note: subroutines should not be includes in program counter
+            # may need to use a flag and mask to implement
+            #if execute_cmd != self.CALL and execute_cmd != self.RET:
             if execute_cmd & 0b00010000 == 0:
                 self.pc += opcode_size
                 
