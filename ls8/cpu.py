@@ -12,20 +12,22 @@ class CPU:
         """
         Construct a new CPU.
         """
-        # Opcodes
-        self.op = 0
         # RAM memory
         self.ram = [0]*255
         # Registers
         self.reg = [0]*8
         self.reg[7] = 0xF4
         # Program Counter
+        # address of the currently executing instruction
         self.pc = 0
         # Instruction Register
+        # contains a copy of the currently executing instruction
         self.ir = 0
         # Memory Address Register
+        # holds the memory address we're reading or writing
         self.mar = 0
         # Memory Data Register
+        # holds the value to write or the value just read
         self.mdr = 0
         # Flag Register
         self.fl = 0
@@ -34,85 +36,163 @@ class CPU:
         # Stack Pointer
         self.sp = 7
 
-        # in CPU opcodes
-        # Loads registerA with the value at 
-        # the memory address stored in registerB.
-        self.LD = 0b10000011        # LD RegA, regB
-        # Set the value of a register to an integer.
-        self.LDI = 0b10000010       # LDI regA, integer
-        self.PRN = 0b01000111       # PRN regA
-        self.PRA = 0b01001000       # PRA regA
-        # Halt the CPU (and exit the emulator).
-        self.HLT = 0b00000001       # HLT
+        ## Opcodes
+        ## performed in ALU
         # Add the value in two registers 
         # and store the result in registerA
-        self.ADD = 0b10100000       # ADD regA, regB
-        self.MUL = 0b10100010       # MUL regA, regB
-        self.SUB = 0b10100001       # SUB regA, regB
+        self.ADD = 0b10100000
+        
+        # Add an immediate value to a register
+        self.ADDI = 0b10101110      # ADDI regA, regB       
+        
+        # Bitwise-AND the values in registerA 
+        # and registerB, then store the result in registerA.
+        self.AND = 0b10101000       # AND regA, regB
+        
+        # Compare the values in two registers.
+        self.CMP = 0b10100111       # CMP regA, regB
+        
         # Decrement (subtract 1 from) 
         # the value in the given register.
         self.DEC = 0b01100110       # DEC regA
-        # ncrement (add 1 to) 
-        # the value in the given register.
-        self.INC = 0b01100101       # INC regA
+        
         # divide the value in the first register
         # by the value in the second register,
         # storing the result in the first register
         self.DIV = 0b10100011       # DIV regA, regB     
-        self.PUSH = 0b01000101      # PUSH regA
-        self.POP = 0b01000110       # POP regA
-        self.SHL = 0b10101100       # SHL regA, regB
-        # Calls a subroutine (function) 
-        # at the address stored in the register.
-        self.CALL = 0b01010000      # CALL regA
-        self.RET = 0b00010001       # RET
-        # Compare the values in two registers.
-        self.CMP = 0b10100111       # CMP regA, regB
+        
+        # Increment (add 1 to) 
+        # the value in the given register.
+        self.INC = 0b01100101       # INC regA
+        
         # Divide the value in the first register 
         # by the value in the second, storing 
         # the remainder of the result in registerA.
         self.MOD = 0b10100100       # MOD regA, regB
-        #self.ADDI = 0b      # ADDI regA, regB
-        # Bitwise-AND the values in registerA 
-        # and registerB, then store the result in registerA.
-        self.AND = 0b10101000       # AND regA, regB
+        
+        # Multiply the values in two registers
+        # together and store the result in registerA.
+        self.MUL = 0b10100010       # MUL regA, regB
+        
+        # Perform a bitwise-NOT on the value in a register, 
+        # storing the result in the register.
         self.NOT = 0b01101001       # NOT regA
+        
+        # Perform a bitwise-OR between the 
+        # values in registerA and registerB, 
+        # storing the result in registerA.
         self.OR  = 0b10101010       # OR regA, regB
-        self.XOR = 0b10101011       # XOR regA, regB
+
+        # Shift the value in registerA left 
+        # by the number of bits specified in registerB, 
+        # filling the low bits with 0.
+        self.SHL = 0b10101100       # SHL regA, regB
+        
+        # Shift the value in registerA right 
+        # by the number of bits specified in registerB, 
+        # filling the high bits with 0.
         self.SHR = 0b10101101       # SHR regA, regB
-        # Jump to the address stored 
-        # in the given register.
-        self.JPM = 0b01010100       # JMP regA
+        
+        # Subtract the value in the second 
+        # register from the first, 
+        # storing the result in registerA.
+        self.SUB = 0b10100001       # SUB regA, regB
+                
+        # Perform a bitwise-XOR between the 
+        # values in registerA and registerB, 
+        # storing the result in registerA.
+        self.XOR = 0b10101011       # XOR regA, regB
+        
+
+        ## Opcodes
+        ## performed as execute_cmd
+        # Calls a subroutine (function) 
+        # at the address stored in the register.
+        self.CALL = 0b01010000      # CALL regA
+       
+        # Halt the CPU (and exit the emulator).
+        self.HLT = 0b00000001       # HLT
+        
+        # Issue the interrupt number stored 
+        # in the given register. 
+        self.INT = 0b01010010       # INT regA
+        
+        # Return from an interrupt handler.
+        self.IRET = 0b00010011      # IRET 
+        
         # If equal flag is set (true), 
         # jump to the address stored in the given register.
         self.JEQ = 0b01010101       # JEQ regA
+        
         # If greater-than flag or equal flag 
         # is set (true), jump to the address 
         # stored in the given register.
         self.JGE = 0b01011010       # JGE regA
+        
         # If greater-than flag is set (true), 
         # jump to the address stored in the given 
         # register. 
         self.JGT = 0b01010111       # JGT regA
+        
+        # If less-than flag is set (true), 
+        # jump to the address stored in the given 
+        # register.
+        self.JLE = 0b01011001       # JLE regA
+
         # If less-than flag is set (true), 
         # jump to the address stored in the given 
         # register.
         self.JLT = 0b01011000       # JLT regA
+        
+        # Jump to the address stored 
+        # in the given register.
+        self.JPM = 0b01010100       # JMP regA
+               
         # If E flag is clear (false, 0), 
         # jump to the address stored in the given 
         # register.
         self.JNE = 0b01010110       # JNE regA
-        # Issue the interrupt number stored 
-        # in the given register. 
-        self.INT = 0b01010010       # INT regA
-        # Return from an interrupt handler.
-        self.IRET = 0b00010011      # IRET 
+        
+        # Loads registerA with the value at 
+        # the memory address stored in registerB.
+        self.LD = 0b10000011        # LD RegA, regB
+        
+        # Set the value of a register to an integer.
+        self.LDI = 0b10000010       # LDI regA, integer
+        
+        # No operation. 
+        # Do nothing for this instruction.
+        self.NOP = 0b00000000       # NOP 
+        
+        # Pop the value at the top of 
+        # the stack into the given register.
+        self.POP = 0b01000110       # POP regA
+        
+        # Print alpha character value 
+        # stored in the given register.
+        self.PRA = 0b01001000       # PRA regA
+        
+        # Print numeric value stored 
+        # in the given register.
+        self.PRN = 0b01000111       # PRN regA
+        
+        # Push the value in the 
+        # given register on the stack.
+        self.PUSH = 0b01000101      # PUSH regA
+        
+        # Return from subroutine.
+        self.RET = 0b00010001       # RET
+        
+        # Store value in registerB in the 
+        # address stored in registerA.
+        self.ST = 0b10000100        # ST regA, regB
 
 
     def load(self, file_name):
         """
         Load a program into memory.
         """
+        
         address = 0
                 
         # with open(file_name[1]) as file:
@@ -136,8 +216,8 @@ class CPU:
         if op == "ADD":
             self.reg[oper1] += self.reg[oper2]
 
-        # elif op == "ADDI":
-        #      self.reg[oper1] += self.reg[oper2]
+        elif op == "ADDI":
+             self.reg[oper1] += oper2
 
         elif op == "MUL":
             self.reg[oper1] *= self.reg[oper2]
@@ -162,6 +242,24 @@ class CPU:
             else:
                 self.reg[oper1] %= self.reg[oper2]
 
+        elif op == "AND":
+                self.reg[oper1] &= self.reg[oper2]
+
+        elif op == "OR":
+            self.reg[oper1] |= self.reg[oper2]
+
+        elif op == "XOR":
+            self.reg[oper1] ^= self.reg[oper2]
+
+        elif op == "NOT":
+            self.reg[oper1] != self.reg[oper2]
+
+        elif op == "SHL":
+            self.reg[oper1] <<= self.reg[oper2]
+
+        elif op == "SHR":
+            self.reg[oper1] >>= self.reg[oper2]
+
         elif op == "CMP":
             # `FL` bits: `00000LGE`
             if self.reg[oper1] < self.reg[oper2]:
@@ -169,7 +267,7 @@ class CPU:
             elif self.reg[oper1] > self.reg[oper2]:
                 self.fl = 0b00000010
             else:
-                self.fl = 0b00000001
+                self.fl = 0b00000001        
 
         else:
             raise Exception("Unsupported ALU Operation")
@@ -223,8 +321,8 @@ class CPU:
             elif execute_cmd == self.ADD:            
                 self.alu("ADD", oper1, oper2)
 
-            # elif execute_cmd == self.ADDI:            
-            #     self.alu("ADDI", oper1, oper2)
+            elif execute_cmd == self.ADDI:            
+                self.alu("ADDI", oper1, oper2)
 
             elif execute_cmd == self.MUL:
                 self.alu("MUL", oper1, oper2)
@@ -240,6 +338,27 @@ class CPU:
 
             elif execute_cmd == self.MOD:            
                 self.alu("MOD", oper1, oper2)
+
+            elif execute_cmd == self.MUL:
+                self.alu("MUL", oper1, oper2)
+            
+            elif execute_cmd == self.AND:
+                self.alu("AND", oper1, oper2)
+
+            elif execute_cmd == self.OR:
+                self.alu("OR", oper1, oper2)
+
+            elif execute_cmd == self.XOR:
+                self.alu("XOR", oper1, oper2)
+
+            elif execute_cmd == self.NOT:
+                self.alu("NOT", oper1, oper2)
+
+            elif execute_cmd == self.SHL:
+                self.alu("SHL", oper1, oper2)
+
+            elif execute_cmd == self.SHR:
+                self.alu("SHR", oper1, oper2)
 
             elif execute_cmd == self.PUSH:
                 # decrement
@@ -281,39 +400,22 @@ class CPU:
                 
             elif execute_cmd == self.JEQ:
                 if self.fl == 0b00000001:
-                    self.JMP()
+                    self.pc = self.reg[oper1]
                 else:
-                    self.pc += self.opcode_size
+                    self.pc += opcode_size
 
             elif execute_cmd == self.JNE:
                 if self.fl != 0b00000001:
-                    self.JMP()
+                    self.pc = self.reg[oper1]
                 else:
-                    self.pc += self.opcode_size
-
-            elif execute_cmd == self.AND:
-                self.reg[oper1] &= self.reg[oper2]
-
-            elif execute_cmd == self.OR:
-                self.reg[oper1] |= self.reg[oper2]
-
-            elif execute_cmd == self.XOR:
-                self.reg[oper1] ^= self.reg[oper2]
-
-            elif execute_cmd == self.NOT:
-                self.reg[oper1] != self.reg[oper2]
-
-            elif execute_cmd == self.SHL:
-                self.reg[oper1] <<= self.reg[oper2]
-
-            elif execute_cmd == self.SHR:
-                self.reg[oper1] >>= self.reg[oper2]
+                    self.pc += opcode_size
 
             else:
                 self.trace()
                 raise Exception(f'Unrecognized Instruction')
 
             # increment program counter as determined by opcode size
+            # Note: subroutines should not be includes in program counter
             if execute_cmd & 0b00010000 == 0:
                 self.pc += opcode_size
                 

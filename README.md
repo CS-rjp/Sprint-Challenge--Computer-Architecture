@@ -23,7 +23,11 @@ Instructor in your cohort help channel on Slack. Your work reflects your
 proficiency with Computer Architecture and your command of the related concepts
 and techniques.
 
-You have three hours to complete this challenge. Plan your time accordingly.
+Un-hardcode the machine code:
+- [ ] Create an active '.ls8' file
+- [ ] Implement the `load()` function to load an `.ls8` file given the filename
+      passed in as an argument
+- [ ] Implement a Multiply instruction (run `mult.ls8`)
 
 ## Commits
 
