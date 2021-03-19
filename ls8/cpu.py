@@ -182,24 +182,7 @@ class CPU:
             elif self.reg[oper1] > self.reg[oper2]:
                 self.fl = 0b00000010
             else:
-                self.fl = 0b00000001
-
-
-    def alu(self, op, oper1, oper2):
-        """
-        ALU operations.
-        """
-        if op == "ADD":
-            self.reg[oper1] += self.reg[oper2]
-
-        elif op == "MUL":
-            self.reg[oper1] *= self.reg[oper2]
-
-        # elif op == "SUB": 
-        #     self.reg[oper1] -= self.reg[oper2]
-
-        # elif op == "DIV":
-        #     self.reg[oper1] //= self.reg[oper2]
+                self.fl = 0b00000001        
 
         else:
             raise Exception("Unsupported ALU Operation")
@@ -314,15 +297,15 @@ class CPU:
                 
             elif execute_cmd == self.JEQ:
                 if self.fl == 0b00000001:
-                    self.JMP()
+                    self.pc = self.reg[oper1]
                 else:
-                    self.pc += self.opcode_size
+                    self.pc += opcode_size
 
             elif execute_cmd == self.JNE:
                 if self.fl != 0b00000001:
-                    self.JMP()
+                    self.pc = self.reg[oper1]
                 else:
-                    self.pc += self.opcode_size
+                    self.pc += opcode_size
 
             elif execute_cmd == self.AND:
                 self.reg[oper1] &= self.reg[oper2]
