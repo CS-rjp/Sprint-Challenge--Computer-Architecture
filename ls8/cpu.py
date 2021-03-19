@@ -113,6 +113,7 @@ class CPU:
         """
         Load a program into memory.
         """
+        
         address = 0
                 
         # with open(file_name[1]) as file:
