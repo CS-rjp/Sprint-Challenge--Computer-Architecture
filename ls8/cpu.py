@@ -35,31 +35,76 @@ class CPU:
         self.sp = 7
 
         # in CPU opcodes
-        self.LDI = 0b10000010       # LDI regA, index
+        # Loads registerA with the value at 
+        # the memory address stored in registerB.
+        self.LD = 0b10000011        # LD RegA, regB
+        # Set the value of a register to an integer.
+        self.LDI = 0b10000010       # LDI regA, integer
         self.PRN = 0b01000111       # PRN regA
         self.PRA = 0b01001000       # PRA regA
+        # Halt the CPU (and exit the emulator).
         self.HLT = 0b00000001       # HLT
+        # Add the value in two registers 
+        # and store the result in registerA
         self.ADD = 0b10100000       # ADD regA, regB
         self.MUL = 0b10100010       # MUL regA, regB
         self.SUB = 0b10100001       # SUB regA, regB
+        # Decrement (subtract 1 from) 
+        # the value in the given register.
+        self.DEC = 0b01100110       # DEC regA
+        # ncrement (add 1 to) 
+        # the value in the given register.
+        self.INC = 0b01100101       # INC regA
+        # divide the value in the first register
+        # by the value in the second register,
+        # storing the result in the first register
         self.DIV = 0b10100011       # DIV regA, regB     
         self.PUSH = 0b01000101      # PUSH regA
         self.POP = 0b01000110       # POP regA
         self.SHL = 0b10101100       # SHL regA, regB
+        # Calls a subroutine (function) 
+        # at the address stored in the register.
         self.CALL = 0b01010000      # CALL regA
         self.RET = 0b00010001       # RET
+        # Compare the values in two registers.
         self.CMP = 0b10100111       # CMP regA, regB
         self.MOD = 0b10100100       # MOD regA, regB
         #self.ADDI = 0b      # ADDI regA, regB
+        # Bitwise-AND the values in registerA 
+        # and registerB, then store the result in registerA.
         self.AND = 0b10101000       # AND regA, regB
         self.NOT = 0b01101001       # NOT regA
         self.OR  = 0b10101010       # OR regA, regB
         self.XOR = 0b10101011       # XOR regA, regB
         self.SHR = 0b10101101       # SHR regA, regB
+        # Jump to the address stored 
+        # in the given register.
         self.JPM = 0b01010100       # JMP regA
+        # If equal flag is set (true), 
+        # jump to the address stored in the given register.
         self.JEQ = 0b01010101       # JEQ regA
+        # If greater-than flag or equal flag 
+        # is set (true), jump to the address 
+        # stored in the given register.
+        self.JGE = 0b01011010       # JGE regA
+        # If greater-than flag is set (true), 
+        # jump to the address stored in the given 
+        # register. 
+        self.JGT = 0b01010111       # JGT regA
+        # If less-than flag is set (true), 
+        # jump to the address stored in the given 
+        # register.
+        self.JLT = 0b01011000       # JLT regA
+        # If E flag is clear (false, 0), 
+        # jump to the address stored in the given 
+        # register.
         self.JNE = 0b01010110       # JNE regA
-     
+        # Issue the interrupt number stored 
+        # in the given register. 
+        self.INT = 0b01010010       # INT regA
+        # Return from an interrupt handler.
+        self.IRET = 0b00010011      # IRET 
+
 
     def load(self, file_name):
         """
@@ -95,14 +140,33 @@ class CPU:
             self.reg[oper1] *= self.reg[oper2]
 
         elif op == "SUB": 
-             self.reg[oper1] -= self.reg[oper2]
+            self.reg[oper1] -= self.reg[oper2]
+
+        elif op == "DEC": 
+            self.reg[oper1] -= self.reg[oper2]
 
         elif op == "DIV":
-             self.reg[oper1] //= self.reg[oper2]
-
+            if oper2 == 0:
+                print('Error: Empty address, unable to complete computation')
+                self.HLT()
+            else:
+                self.reg[oper1] //= self.reg[oper2]
+             
         elif op == "MOD":
-             self.reg[oper1] %= self.reg[oper2]
+            if oper2 == 0:
+                print('Error: Empty address, unable to complete computation')
+                self.HLT()
+            else:
+                self.reg[oper1] %= self.reg[oper2]
 
+        elif op == "CMP":
+            # `FL` bits: `00000LGE`
+            if self.reg[oper1] < self.reg[oper2]:
+                self.fl = 0b00000100
+            elif self.reg[oper1] > self.reg[oper2]:
+                self.fl = 0b00000010
+            else:
+                self.fl = 0b00000001
 
         else:
             raise Exception("Unsupported ALU Operation")
@@ -168,6 +232,9 @@ class CPU:
             elif execute_cmd == self.DIV:
                 self.alu("DIV", oper1, oper2)
 
+            elif execute_cmd == self.CMP:
+                self.alu("CMP", oper1, oper2)
+
             elif execute_cmd == self.MOD:            
                 self.alu("MOD", oper1, oper2)
 
@@ -206,15 +273,6 @@ class CPU:
                 # increment
                 self.reg[self.sp] +=1
 
-            elif execute_cmd == self.CMP:
-                # `FL` bits: `00000LGE`
-                if self.reg[oper1] < self.reg[oper2]:
-                    self.fl = 0b00000100
-                elif self.reg[oper1] > self.reg[oper2]:
-                    self.fl = 0b00000010
-                else:
-                    self.fl = 0b00000001
-
             elif execute_cmd == self.JPM:
                 self.pc = self.reg[oper1]
                 
@@ -248,15 +306,11 @@ class CPU:
             elif execute_cmd == self.SHR:
                 self.reg[oper1] >>= self.reg[oper2]
 
-
             else:
                 self.trace()
                 raise Exception(f'Unrecognized Instruction')
 
             # increment program counter as determined by opcode size
-            # Note: subroutines should not be includes in program counter
-            # may need to use a flag and mask to implement
-            #if execute_cmd != self.CALL and execute_cmd != self.RET:
             if execute_cmd & 0b00010000 == 0:
                 self.pc += opcode_size
                 
@@ -277,5 +331,8 @@ class CPU:
 
 
     def halt(self):
+        """
+        Halt the CPU and exit the emulator.
+        """
         self.running = False
         sys.exit(0)
