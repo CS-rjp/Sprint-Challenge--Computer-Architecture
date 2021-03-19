@@ -68,6 +68,9 @@ class CPU:
         self.RET = 0b00010001       # RET
         # Compare the values in two registers.
         self.CMP = 0b10100111       # CMP regA, regB
+        # Divide the value in the first register 
+        # by the value in the second, storing 
+        # the remainder of the result in registerA.
         self.MOD = 0b10100100       # MOD regA, regB
         #self.ADDI = 0b      # ADDI regA, regB
         # Bitwise-AND the values in registerA 
