@@ -40,12 +40,25 @@ class CPU:
         self.PRA = 0b01001000       # PRA regA
         self.HLT = 0b00000001       # HLT
         self.ADD = 0b10100000       # ADD regA, regB
-        self.MUL = 0b10100010       # MUL regA, regB     
+        self.MUL = 0b10100010       # MUL regA, regB
+        self.SUB = 0b10100001       # SUB regA, regB
+        self.DIV = 0b10100011       # DIV regA, regB     
         self.PUSH = 0b01000101      # PUSH regA
         self.POP = 0b01000110       # POP regA
         self.SHL = 0b10101100       # SHL regA, regB
         self.CALL = 0b01010000      # CALL regA
         self.RET = 0b00010001       # RET
+        self.CMP = 0b10100111       # CMP regA, regB
+        self.MOD = 0b10100100       # MOD regA, regB
+        #self.ADDI = 0b      # ADDI regA, regB
+        self.AND = 0b10101000       # AND regA, regB
+        self.NOT = 0b01101001       # NOT regA
+        self.OR  = 0b10101010       # OR regA, regB
+        self.XOR = 0b10101011       # XOR regA, regB
+        self.SHR = 0b10101101       # SHR regA, regB
+        self.JPM = 0b01010100       # JMP regA
+        self.JEQ = 0b01010101       # JEQ regA
+        self.JNE = 0b01010110       # JNE regA
      
 
     def load(self, file_name):
@@ -75,14 +88,21 @@ class CPU:
         if op == "ADD":
             self.reg[oper1] += self.reg[oper2]
 
+        # elif op == "ADDI":
+        #      self.reg[oper1] += self.reg[oper2]
+
         elif op == "MUL":
             self.reg[oper1] *= self.reg[oper2]
 
-        # elif op == "SUB": 
-        #     self.reg[oper1] -= self.reg[oper2]
+        elif op == "SUB": 
+             self.reg[oper1] -= self.reg[oper2]
 
-        # elif op == "DIV":
-        #     self.reg[oper1] //= self.reg[oper2]
+        elif op == "DIV":
+             self.reg[oper1] //= self.reg[oper2]
+
+        elif op == "MOD":
+             self.reg[oper1] %= self.reg[oper2]
+
 
         else:
             raise Exception("Unsupported ALU Operation")
@@ -96,7 +116,7 @@ class CPU:
 
         print(f"TRACE: %02X | %02X %02X %02X |" % (
             self.pc,
-            #self.fl,
+            self.fl,
             #self.ie,
             self.ram_read(self.pc),
             self.ram_read(self.pc + 1),
@@ -136,8 +156,20 @@ class CPU:
             elif execute_cmd == self.ADD:            
                 self.alu("ADD", oper1, oper2)
 
+            # elif execute_cmd == self.ADDI:            
+            #     self.alu("ADDI", oper1, oper2)
+
             elif execute_cmd == self.MUL:
                 self.alu("MUL", oper1, oper2)
+
+            elif execute_cmd == self.SUB:
+                self.alu("SUB", oper1, oper2)
+
+            elif execute_cmd == self.DIV:
+                self.alu("DIV", oper1, oper2)
+
+            elif execute_cmd == self.MOD:            
+                self.alu("MOD", oper1, oper2)
 
             elif execute_cmd == self.PUSH:
                 # decrement
@@ -173,6 +205,49 @@ class CPU:
                 self.pc = self.ram[self.reg[self.sp]]
                 # increment
                 self.reg[self.sp] +=1
+
+            elif execute_cmd == self.CMP:
+                # `FL` bits: `00000LGE`
+                if self.reg[oper1] < self.reg[oper2]:
+                    self.fl = 0b00000100
+                elif self.reg[oper1] > self.reg[oper2]:
+                    self.fl = 0b00000010
+                else:
+                    self.fl = 0b00000001
+
+            elif execute_cmd == self.JPM:
+                self.pc = self.reg[oper1]
+                
+            elif execute_cmd == self.JEQ:
+                if self.fl == 0b00000001:
+                    self.JMP()
+                else:
+                    self.pc += self.opcode_size
+
+            elif execute_cmd == self.JNE:
+                if self.fl != 0b00000001:
+                    self.JMP()
+                else:
+                    self.pc += self.opcode_size
+
+            elif execute_cmd == self.AND:
+                self.reg[oper1] &= self.reg[oper2]
+
+            elif execute_cmd == self.OR:
+                self.reg[oper1] |= self.reg[oper2]
+
+            elif execute_cmd == self.XOR:
+                self.reg[oper1] ^= self.reg[oper2]
+
+            elif execute_cmd == self.NOT:
+                self.reg[oper1] != self.reg[oper2]
+
+            elif execute_cmd == self.SHL:
+                self.reg[oper1] <<= self.reg[oper2]
+
+            elif execute_cmd == self.SHR:
+                self.reg[oper1] >>= self.reg[oper2]
+
 
             else:
                 self.trace()
